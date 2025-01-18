@@ -31,7 +31,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.post('/workflows', (req, res) => {
+app.post('/api/workflows', (req, res) => {
   try {
     const workflowId = workflowStorage.saveWorkflow(req.body);
     res.status(201).json({ id: workflowId });
@@ -40,7 +40,7 @@ app.post('/workflows', (req, res) => {
   }
 });
 
-app.get('/workflows/:id', (req, res) => {
+app.get('/api/workflows/:id', (req, res) => {
   const workflow = workflowStorage.getWorkflow(req.params.id);
   if (!workflow) {
     return res.status(404).json({ error: 'Workflow not found' });
@@ -48,7 +48,7 @@ app.get('/workflows/:id', (req, res) => {
   res.json(workflow);
 });
 
-app.post('/workflows/:id/execute', async (req, res) => {
+app.post('/api/workflows/:id/execute', async (req, res) => {
   try {
     const workflow = workflowStorage.getWorkflow(req.params.id);
     if (!workflow) {
@@ -73,7 +73,7 @@ app.post('/workflows/:id/execute', async (req, res) => {
   }
 });
 
-app.post('/workflows/:id/continue', async (req, res) => {
+app.post('/api/workflows/:id/continue', async (req, res) => {
   try {
     const workflow = workflowStorage.getWorkflow(req.params.id);
     if (!workflow) {
@@ -97,7 +97,7 @@ app.post('/workflows/:id/continue', async (req, res) => {
   }
 });
 
-app.get('/sessions/:chatId', (req, res) => {
+app.get('/api/sessions/:chatId', (req, res) => {
   const session = chatSessionStorage.getSession(req.params.chatId);
   if (!session) {
     return res.status(404).json({ error: 'Session not found' });
