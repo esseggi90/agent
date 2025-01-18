@@ -15,6 +15,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the dist directory
+app.use(express.static(join(__dirname, '../dist')));
+
 const workflowStorage = new WorkflowStorage();
 const workflowEngine = new WorkflowEngine();
 const chatSessionStorage = new ChatSessionStorage();
@@ -92,6 +95,11 @@ app.get('/sessions/:chatId', (req, res) => {
     return res.status(404).json({ error: 'Session not found' });
   }
   res.json(session);
+});
+
+// Catch all route to serve index.html for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
