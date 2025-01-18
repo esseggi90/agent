@@ -1,11 +1,25 @@
 import React from 'react';
-import { Home, Users, Settings, HelpCircle, Bot, BarChart2, Book, Zap } from 'lucide-react';
+import { Home, Users, Settings, HelpCircle, Bot, BarChart2, Book, Zap, LogOut } from 'lucide-react';
+import { useAuth } from '../providers/AuthProvider';
+import { User } from 'firebase/auth';
+import WorkspaceSelector from './workspace/WorkspaceSelector';
 
 interface SidebarProps {
-  children: React.ReactNode;
+  user: User | null;
 }
 
-export default function Sidebar({ children }: SidebarProps) {
+export default function Sidebar({ user }: SidebarProps) {
+  const { logout } = useAuth();
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = React.useState<string>('');
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <div className="w-64 bg-white flex flex-col h-full">
       {/* Logo Section */}
@@ -20,7 +34,10 @@ export default function Sidebar({ children }: SidebarProps) {
         </div>
       </div>
       
-      {children}
+      <WorkspaceSelector
+        selectedId={selectedWorkspaceId}
+        onSelect={setSelectedWorkspaceId}
+      />
       
       {/* Navigation */}
       <div className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -84,19 +101,24 @@ export default function Sidebar({ children }: SidebarProps) {
 
       {/* User Profile */}
       <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-200 cursor-pointer">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-medium">
-            JD
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center space-x-3 p-3 rounded-xl bg-gray-50">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-medium">
+              {user?.email?.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.email}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              John Doe
-            </p>
-            <p className="text-xs text-gray-500 truncate">
-              john@example.com
-            </p>
-          </div>
-          <Settings className="h-5 w-5 text-gray-400" />
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors duration-200"
+          >
+            <LogOut className="h-5 w-5 mr-2" />
+            Logout
+          </button>
         </div>
       </div>
     </div>
