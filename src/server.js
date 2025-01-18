@@ -102,4 +102,78 @@ app.get('/api/agents/:agentId/workflows', (req, res) => {
   }
 });
 
-[... rest of the existing code ...]
+// Chat Session Endpoints
+app.post('/api/agents/:agentId/chat', async (req, res) => {
+  try {
+    const { agentId } = req.params;
+    const { chatId, userId, input } = req.body;
+
+    const agent = agentStorage.getAgent(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    // Get agent's workflows
+    const workflows = workflowStorage.getAgentWorkflows(agentId);
+    if (workflows.length === 0) {
+      return res.status(400).json({ error: 'Agent has no workflows' });
+    }
+
+    // Get existing session or create new one
+    let session = chatSessionStorage.getSession(chatId);
+    let result;
+
+    if (!session || !input) {
+      // Start new session with first workflow
+      const workflow = workflows[0].workflow;
+      const sessionInfo = new SessionInfo(chatId, userId, agentId);
+      session = new WorkflowSession(sessionInfo, workflows[0].id);
+      
+      result = await workflowEngine.executeWorkflow(workflow, {});
+      
+      chatSessionStorage.saveSession(chatId, {
+        session,
+        lastNodeId: result.results[result.results.length - 1].nodeId,
+        context: result.context
+      });
+    } else {
+      // Continue existing session
+      const workflow = workflowStorage.getWorkflow(session.workflowId);
+      const context = { ...session.context, lastInput: input };
+      
+      result = await workflowEngine.executeWorkflow(
+        workflow,
+        context,
+        session.lastNodeId
+      );
+      
+      chatSessionStorage.saveSession(chatId, {
+        session,
+        lastNodeId: result.results[result.results.length - 1].nodeId,
+        context: result.context
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/sessions/:chatId', (req, res) => {
+  const session = chatSessionStorage.getSession(req.params.chatId);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+  res.json(session);
+});
+
+// Catch all route to serve index.html for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, '../dist/index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
