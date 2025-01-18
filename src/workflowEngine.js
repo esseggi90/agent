@@ -27,9 +27,16 @@ export class WorkflowEngine {
       GraphService.validateGraph(workflow.nodes, workflow.edges);
 
       const { nodes, edges } = workflow;
-      let currentNode = startFromNodeId 
-        ? nodes.find(node => node.id === startFromNodeId)
-        : GraphService.findStartNode(nodes, edges);
+      let currentNode;
+
+      if (startFromNodeId) {
+        currentNode = nodes.find(node => node.id === startFromNodeId);
+        if (!currentNode) {
+          throw new Error(`Node with id ${startFromNodeId} not found`);
+        }
+      } else {
+        currentNode = GraphService.findStartNode(nodes, edges);
+      }
 
       const executionResult = [];
 
