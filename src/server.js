@@ -5,10 +5,18 @@ import { WorkflowStorage } from './workflowStorage.js';
 import { ChatSessionStorage } from './chatSessionStorage.js';
 import { WorkflowError } from './interfaces/node.js';
 import { SessionInfo, WorkflowSession } from './interfaces/session.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve i file statici del frontend
+app.use(express.static(join(__dirname, '../dist')));
 
 const workflowStorage = new WorkflowStorage();
 const workflowEngine = new WorkflowEngine();
@@ -39,131 +47,11 @@ const validateSession = (req, res, next) => {
   }
 };
 
-// Formatta la risposta in base al tipo di nodo
-const formatResponse = (result) => {
-  const lastNode = result.results[result.results.length - 1];
-  
-  if (lastNode.type === 'input') {
-    return {
-      type: 'input',
-      question: lastNode.output
-    };
-  }
-  
-  if (lastNode.type === 'message') {
-    return {
-      type: 'message',
-      message: lastNode.output
-    };
-  }
-  
-  return lastNode;
-};
+// ... [resto delle route API] ...
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err);
-  if (err instanceof WorkflowError) {
-    res.status(400).json({
-      error: err.message,
-      type: err.type,
-      nodeId: err.nodeId
-    });
-  } else {
-    res.status(500).json({
-      error: 'Internal server error',
-      message: err.message
-    });
-  }
-});
-
-// Create a new workflow
-app.post('/workflows', (req, res) => {
-  try {
-    const workflow = req.body;
-    const id = workflowStorage.saveWorkflow(workflow);
-    res.json({ id, message: 'Workflow created successfully' });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get a workflow by ID
-app.get('/workflows/:id', (req, res) => {
-  try {
-    const workflow = workflowStorage.getWorkflow(req.params.id);
-    if (!workflow) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-    res.json(workflow);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Execute a workflow
-app.post('/workflows/:id/execute', validateSession, async (req, res, next) => {
-  try {
-    const workflow = workflowStorage.getWorkflow(req.params.id);
-    if (!workflow) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    const session = new WorkflowSession(req.sessionInfo, req.params.id);
-    const context = { ...req.body.context, session: session.toJSON() };
-    
-    const result = await workflowEngine.executeWorkflow(workflow, context);
-    
-    chatSessionStorage.updateSessionNode(
-      req.sessionInfo.chatId,
-      result.results[result.results.length - 1].nodeId,
-      context
-    );
-    
-    res.json(formatResponse(result));
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Continue workflow after input
-app.post('/workflows/:id/continue', validateSession, async (req, res, next) => {
-  try {
-    const workflow = workflowStorage.getWorkflow(req.params.id);
-    if (!workflow) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    const { context, input, lastNodeId } = req.body;
-    
-    const session = new WorkflowSession(req.sessionInfo, req.params.id);
-    const updatedContext = {
-      ...context,
-      lastInput: input,
-      session: session.toJSON()
-    };
-
-    const result = await workflowEngine.executeWorkflow(workflow, updatedContext, lastNodeId);
-    
-    chatSessionStorage.updateSessionNode(
-      req.sessionInfo.chatId,
-      result.results[result.results.length - 1].nodeId,
-      updatedContext
-    );
-    
-    res.json(formatResponse(result));
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get session status
-app.get('/sessions/:chatId', (req, res) => {
-  const session = chatSessionStorage.getSession(req.params.chatId);
-  if (!session) {
-    return res.status(404).json({ error: 'Session not found' });
-  }
-  res.json(session);
+// Serve l'app React per qualsiasi altra route
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
