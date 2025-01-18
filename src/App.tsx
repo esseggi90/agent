@@ -6,7 +6,7 @@ import AgentCard from './components/AgentCard';
 import WorkspaceSelector from './components/workspace/WorkspaceSelector';
 import CreateAgentModal from './components/agent/CreateAgentModal';
 import { useAgents } from './hooks/useAgents';
-import { Plus, Search, Filter, SortAsc, Menu } from 'lucide-react';
+import { Plus, Search, Filter, SortAsc, Menu, LayoutGrid, List } from 'lucide-react';
 
 function AppContent() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('');
@@ -36,18 +36,18 @@ function AppContent() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Mobile Sidebar Overlay */}
       {showMobileSidebar && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-200"
           onClick={() => setShowMobileSidebar(false)}
         />
       )}
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-200 ease-in-out
+        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0
         ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -60,13 +60,13 @@ function AppContent() {
       </div>
       
       <div className="flex-1 flex flex-col w-full">
-        {/* Header with mobile menu */}
-        <div className="bg-white border-b border-gray-200">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-100 shadow-sm">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 items-center justify-between">
               <button
                 onClick={() => setShowMobileSidebar(true)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200"
               >
                 <Menu className="h-6 w-6" />
               </button>
@@ -77,71 +77,98 @@ function AppContent() {
           </div>
         </div>
         
-        <main className="flex-1 p-4 sm:p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+          <div className="max-w-7xl mx-auto space-y-8">
             {/* Dashboard Header */}
-            <div className="mb-6 sm:mb-8">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Agents Dashboard</h1>
-              <p className="mt-1 text-sm text-gray-500">
+            <div className="animate-fade-in">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Agents Dashboard</h1>
+              <p className="mt-2 text-sm text-gray-500">
                 Manage and monitor your AI agents
               </p>
             </div>
 
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in" style={{ '--delay': '0.2s' } as React.CSSProperties}>
+              {[
+                { label: 'Total Agents', value: agents.length, icon: 'bot' },
+                { label: 'Active Agents', value: agents.filter(a => a.status === 'active').length, icon: 'active' },
+                { label: 'Draft Agents', value: agents.filter(a => a.status === 'draft').length, icon: 'draft' }
+              ].map((stat, idx) => (
+                <div key={idx} className="stat-card">
+                  <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                  <p className="mt-2 text-3xl font-bold text-gray-900">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
             {/* Action Bar */}
-            <div className="mb-6 space-y-4 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
-              <div className="relative w-full sm:max-w-md">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in" style={{ '--delay': '0.3s' } as React.CSSProperties}>
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type="text"
                   placeholder="Search agents..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
               
-              <div className="grid grid-cols-3 sm:grid-cols-none sm:flex gap-2 sm:gap-3 w-full sm:w-auto">
-                <button className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                  <Filter className="h-4 w-4" />
-                  <span className="hidden sm:ml-2 sm:inline">Filter</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-200">
+                  <button
+                    onClick={() => setView('grid')}
+                    className={`p-2 rounded-lg ${view === 'grid' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-500'} transition-all duration-200`}
+                  >
+                    <LayoutGrid className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => setView('list')}
+                    className={`p-2 rounded-lg ${view === 'list' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-500'} transition-all duration-200`}
+                  >
+                    <List className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <button className="btn-secondary">
+                  <Filter className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Filter</span>
                 </button>
-                <button className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                  <SortAsc className="h-4 w-4" />
-                  <span className="hidden sm:ml-2 sm:inline">Sort</span>
+                
+                <button className="btn-secondary">
+                  <SortAsc className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sort</span>
                 </button>
+                
                 <button
                   onClick={() => setShowCreateAgent(true)}
-                  className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className="btn-primary"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:ml-2 sm:inline">New Agent</span>
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">New Agent</span>
                 </button>
               </div>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {[
-                { label: 'Total Agents', value: agents.length },
-                { label: 'Active Agents', value: agents.filter(a => a.status === 'active').length },
-                { label: 'Draft Agents', value: agents.filter(a => a.status === 'draft').length }
-              ].map((stat, idx) => (
-                <div key={idx} className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
-                  <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                  <p className="mt-2 text-2xl sm:text-3xl font-semibold text-gray-900">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-
             {/* Agents Grid */}
-            <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6`}>
+            <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6 animate-fade-in`} style={{ '--delay': '0.4s' } as React.CSSProperties}>
               {filteredAgents.length > 0 ? (
                 filteredAgents.map((agent) => (
                   <AgentCard key={agent.id} agent={agent} view={view} />
                 ))
               ) : (
-                <div className="col-span-full text-center py-8 sm:py-12">
-                  <p className="text-gray-500">No agents found matching your search.</p>
+                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <Search className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 mb-2">No agents found matching your search.</p>
+                  <button
+                    onClick={() => setShowCreateAgent(true)}
+                    className="btn-primary mt-4"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Agent
+                  </button>
                 </div>
               )}
             </div>
