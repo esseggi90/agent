@@ -22,6 +22,14 @@ const workflowStorage = new WorkflowStorage();
 const workflowEngine = new WorkflowEngine();
 const chatSessionStorage = new ChatSessionStorage();
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API routes
 app.post('/workflows', (req, res) => {
   try {
