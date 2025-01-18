@@ -15,48 +15,86 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve i file statici del frontend
-app.use(express.static(join(__dirname, '../dist')));
-
 const workflowStorage = new WorkflowStorage();
 const workflowEngine = new WorkflowEngine();
 const chatSessionStorage = new ChatSessionStorage();
 
-// Health check endpoint for Render
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy' });
+// API routes
+app.post('/workflows', (req, res) => {
+  try {
+    const workflowId = workflowStorage.saveWorkflow(req.body);
+    res.status(201).json({ id: workflowId });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
-// Middleware per validare le informazioni della sessione
-const validateSession = (req, res, next) => {
-  try {
-    const { chatId, userId, agentId } = req.body;
-    if (!chatId || !userId) {
-      return res.status(400).json({
-        error: 'Missing required session information',
-        message: 'chatId and userId are required'
-      });
-    }
-    req.sessionInfo = new SessionInfo(chatId, userId, agentId);
-    next();
-  } catch (error) {
-    res.status(400).json({
-      error: 'Invalid session information',
-      message: error.message
-    });
+app.get('/workflows/:id', (req, res) => {
+  const workflow = workflowStorage.getWorkflow(req.params.id);
+  if (!workflow) {
+    return res.status(404).json({ error: 'Workflow not found' });
   }
-};
+  res.json(workflow);
+});
 
-// ... [resto delle route API] ...
+app.post('/workflows/:id/execute', async (req, res) => {
+  try {
+    const workflow = workflowStorage.getWorkflow(req.params.id);
+    if (!workflow) {
+      return res.status(404).json({ error: 'Workflow not found' });
+    }
 
-// Serve l'app React per qualsiasi altra route
-app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, '../dist/index.html'));
+    const { chatId, userId, agentId } = req.body;
+    const sessionInfo = new SessionInfo(chatId, userId, agentId);
+    const session = new WorkflowSession(sessionInfo, req.params.id);
+    
+    const result = await workflowEngine.executeWorkflow(workflow, req.body.context || {});
+    
+    chatSessionStorage.saveSession(chatId, {
+      session,
+      lastNodeId: result.results[result.results.length - 1].nodeId,
+      context: result.context
+    });
+    
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/workflows/:id/continue', async (req, res) => {
+  try {
+    const workflow = workflowStorage.getWorkflow(req.params.id);
+    if (!workflow) {
+      return res.status(404).json({ error: 'Workflow not found' });
+    }
+
+    const { chatId, userId, agentId, input, lastNodeId } = req.body;
+    const context = { ...req.body.context, lastInput: input };
+    
+    const result = await workflowEngine.executeWorkflow(workflow, context, lastNodeId);
+    
+    chatSessionStorage.saveSession(chatId, {
+      session: new WorkflowSession(new SessionInfo(chatId, userId, agentId), req.params.id),
+      lastNodeId: result.results[result.results.length - 1].nodeId,
+      context: result.context
+    });
+    
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/sessions/:chatId', (req, res) => {
+  const session = chatSessionStorage.getSession(req.params.chatId);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+  res.json(session);
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-export default app;
