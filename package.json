@@ -19,9 +19,7 @@
     "react-dom": "^18.2.0",
     "@mantine/core": "^7.4.1",
     "@mantine/hooks": "^7.4.1",
-    "concurrently": "^8.2.2"
-  },
-  "devDependencies": {
+    "concurrently": "^8.2.2",
     "@vitejs/plugin-react": "^4.2.1",
     "vite": "^5.0.11"
   },
