@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Edit2, Archive, Clock, Bot } from 'lucide-react';
+import { Play, Edit2, Bot } from 'lucide-react';
 import type { Agent } from '../types';
 
 interface AgentCardProps {
@@ -11,18 +11,15 @@ interface AgentCardProps {
 export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
   const navigate = useNavigate();
 
-  const handleAction = () => {
-    if (agent.status === 'draft') {
-      navigate(`/workspace/${agent.workspaceId}/agents/${agent.id}/cms`);
-    } else {
-      navigate(`/workspace/${agent.workspaceId}/agents/${agent.id}/run`);
-    }
-  };
-
   const statusColors = {
     active: 'bg-green-50 text-green-700 border-green-200/50',
     draft: 'bg-amber-50 text-amber-700 border-amber-200/50',
     archived: 'bg-gray-50 text-gray-700 border-gray-200/50'
+  };
+
+  const handleAction = (type: 'run' | 'edit') => {
+    // TODO: Implement run and edit functionality
+    console.log(`${type} action clicked for agent:`, agent.id);
   };
 
   if (view === 'list') {
@@ -51,13 +48,24 @@ export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[agent.status]}`}>
               {agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
             </span>
-            <button
-              onClick={handleAction}
-              className="btn-primary"
-            >
-              {agent.status === 'draft' ? <Edit2 className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-              {agent.status === 'draft' ? 'Edit' : 'Run'}
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleAction('edit')}
+                title="Edit functionality coming soon"
+                className="btn-secondary"
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit
+              </button>
+              <button
+                onClick={() => handleAction('run')}
+                title="Run functionality coming soon"
+                className="btn-primary"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Run
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -94,17 +102,22 @@ export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
           <p className="text-sm text-gray-600 line-clamp-2">{agent.description}</p>
         </div>
 
-        <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="flex items-center text-sm text-gray-500">
-            <Clock className="h-4 w-4 mr-1" />
-            {new Date(agent.lastEdited).toLocaleDateString()}
-          </div>
+        <div className="mt-6 flex items-center justify-end space-x-2 pt-4 border-t border-gray-100">
           <button
-            onClick={handleAction}
-            className="btn-primary shadow-sm group-hover:shadow-md transition-all duration-300"
+            onClick={() => handleAction('edit')}
+            title="Edit functionality coming soon"
+            className="btn-secondary"
           >
-            {agent.status === 'draft' ? <Edit2 className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {agent.status === 'draft' ? 'Edit' : 'Run'}
+            <Edit2 className="h-4 w-4 mr-2" />
+            Edit
+          </button>
+          <button
+            onClick={() => handleAction('run')}
+            title="Run functionality coming soon"
+            className="btn-primary"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Run
           </button>
         </div>
       </div>

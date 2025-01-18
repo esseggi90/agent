@@ -31,10 +31,21 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.post('/api/workflows', (req, res) => {
+app.post('/api/agents/:agentId/workflows', (req, res) => {
   try {
-    const workflowId = workflowStorage.saveWorkflow(req.body);
+    const { agentId } = req.params;
+    const workflowId = workflowStorage.saveWorkflow(req.body, agentId);
     res.status(201).json({ id: workflowId });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/agents/:agentId/workflows', (req, res) => {
+  try {
+    const { agentId } = req.params;
+    const workflows = workflowStorage.getAgentWorkflows(agentId);
+    res.json(workflows);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
