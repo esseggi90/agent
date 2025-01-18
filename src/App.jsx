@@ -1,138 +1,128 @@
-import React, { useState } from 'react';
-import { Container, Title, TextInput, Button, Paper, Stack, Text, JsonInput } from '@mantine/core';
+import React, { useState, useEffect } from 'react';
+import { Container, Title, Paper, Stack, Grid, Card, Text, Badge, Button, Group } from '@mantine/core';
 
 function App() {
-  const [workflowId, setWorkflowId] = useState('');
-  const [chatId, setChatId] = useState(`chat_${Date.now()}`);
-  const [userId, setUserId] = useState('user_test');
-  const [agentId, setAgentId] = useState('agent_test');
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [lastNodeId, setLastNodeId] = useState(null);
-  const [context, setContext] = useState({});
+  const [workflows, setWorkflows] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSendMessage = async () => {
-    if (!workflowId) {
-      setMessages(prev => [...prev, { type: 'error', content: 'Please enter a workflow ID' }]);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const endpoint = lastNodeId ? 'continue' : 'execute';
-      const response = await fetch(`/api/workflows/${workflowId}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chatId,
-          userId,
-          agentId,
-          input,
-          lastNodeId,
-          context,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
+  useEffect(() => {
+    // In una vera implementazione, questi dati verrebbero caricati dalle API
+    setWorkflows([
+      {
+        id: 'workflow-1',
+        name: 'Customer Support',
+        nodes: 8,
+        status: 'active'
+      },
+      {
+        id: 'workflow-2',
+        name: 'Sales Process',
+        nodes: 5,
+        status: 'draft'
       }
+    ]);
 
-      // Add messages from results
-      data.results.forEach(result => {
-        if (result.type === 'message') {
-          setMessages(prev => [...prev, { type: 'bot', content: result.output }]);
-        }
-      });
-
-      // Update context and last node ID
-      setContext(data.context);
-      const lastResult = data.results[data.results.length - 1];
-      setLastNodeId(lastResult.nodeId);
-
-      // Clear input if it was sent
-      if (input) {
-        setInput('');
-        setMessages(prev => [...prev, { type: 'user', content: input }]);
+    setSessions([
+      {
+        chatId: 'chat_123',
+        userId: 'user_456',
+        startTime: new Date().toISOString(),
+        status: 'active'
       }
-    } catch (error) {
-      setMessages(prev => [...prev, { type: 'error', content: error.message }]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    ]);
+    
+    setLoading(false);
+  }, []);
 
   return (
-    <Container size="sm" py="xl">
-      <Paper shadow="sm" p="md" withBorder>
-        <Stack spacing="md">
-          <Title order={1}>Workflow Tester</Title>
-          
-          <TextInput
-            label="Workflow ID"
-            value={workflowId}
-            onChange={(e) => setWorkflowId(e.target.value)}
-            placeholder="Enter workflow ID"
-          />
-          
-          <TextInput
-            label="Chat ID"
-            value={chatId}
-            onChange={(e) => setChatId(e.target.value)}
-            disabled
-          />
-          
-          <TextInput
-            label="User ID"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-          />
-          
-          <TextInput
-            label="Agent ID"
-            value={agentId}
-            onChange={(e) => setAgentId(e.target.value)}
-          />
-          
-          <TextInput
-            label="Input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSendMessage();
-              }
-            }}
-          />
-          
-          <Button onClick={handleSendMessage} loading={loading}>
-            Send Message
-          </Button>
-          
-          <Paper withBorder p="md">
-            <Title order={3} mb="md">Messages</Title>
-            {messages.length === 0 ? (
-              <Text color="dimmed">No messages yet</Text>
-            ) : (
-              messages.map((msg, index) => (
-                <Text 
-                  key={index} 
-                  mb="xs"
-                  color={msg.type === 'error' ? 'red' : msg.type === 'user' ? 'blue' : 'black'}
-                >
-                  {msg.type === 'user' ? 'You: ' : msg.type === 'bot' ? 'Bot: ' : 'Error: '}
-                  {msg.content}
-                </Text>
-              ))
-            )}
-          </Paper>
-        </Stack>
-      </Paper>
+    <Container size="xl" py="xl">
+      <Stack spacing="xl">
+        <Title order={1}>Workflow Dashboard</Title>
+
+        <Grid>
+          {/* Statistiche generali */}
+          <Grid.Col span={4}>
+            <Paper shadow="sm" p="md" withBorder>
+              <Stack>
+                <Title order={3}>Overview</Title>
+                <Group>
+                  <div>
+                    <Text size="xl" weight={700}>{workflows.length}</Text>
+                    <Text size="sm" color="dimmed">Total Workflows</Text>
+                  </div>
+                  <div>
+                    <Text size="xl" weight={700}>{sessions.length}</Text>
+                    <Text size="sm" color="dimmed">Active Sessions</Text>
+                  </div>
+                </Group>
+              </Stack>
+            </Paper>
+          </Grid.Col>
+
+          {/* Quick Actions */}
+          <Grid.Col span={8}>
+            <Paper shadow="sm" p="md" withBorder>
+              <Stack>
+                <Title order={3}>Quick Actions</Title>
+                <Group>
+                  <Button variant="filled">Create Workflow</Button>
+                  <Button variant="light">View All Sessions</Button>
+                  <Button variant="light">System Status</Button>
+                </Group>
+              </Stack>
+            </Paper>
+          </Grid.Col>
+        </Grid>
+
+        {/* Lista Workflows */}
+        <Paper shadow="sm" p="md" withBorder>
+          <Title order={2} mb="md">Workflows</Title>
+          <Grid>
+            {workflows.map(workflow => (
+              <Grid.Col key={workflow.id} span={4}>
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                  <Group position="apart" mb="xs">
+                    <Text weight={500}>{workflow.name}</Text>
+                    <Badge color={workflow.status === 'active' ? 'green' : 'yellow'}>
+                      {workflow.status}
+                    </Badge>
+                  </Group>
+                  <Text size="sm" color="dimmed" mb="md">
+                    {workflow.nodes} nodes
+                  </Text>
+                  <Button variant="light" fullWidth>
+                    View Details
+                  </Button>
+                </Card>
+              </Grid.Col>
+            ))}
+          </Grid>
+        </Paper>
+
+        {/* Sessioni Attive */}
+        <Paper shadow="sm" p="md" withBorder>
+          <Title order={2} mb="md">Active Sessions</Title>
+          <Stack>
+            {sessions.map(session => (
+              <Card key={session.chatId} shadow="sm" padding="md" radius="md" withBorder>
+                <Group position="apart">
+                  <div>
+                    <Text weight={500}>Session ID: {session.chatId}</Text>
+                    <Text size="sm" color="dimmed">User: {session.userId}</Text>
+                  </div>
+                  <div>
+                    <Badge color="blue">Active</Badge>
+                    <Text size="xs" color="dimmed" mt={4}>
+                      Started: {new Date(session.startTime).toLocaleString()}
+                    </Text>
+                  </div>
+                </Group>
+              </Card>
+            ))}
+          </Stack>
+        </Paper>
+      </Stack>
     </Container>
   );
 }
