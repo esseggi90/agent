@@ -25,20 +25,13 @@ const privateKey = process.env.FIREBASE_PRIVATE_KEY.includes('\\n')
   : process.env.FIREBASE_PRIVATE_KEY;
 
 // Initialize Firebase Admin with explicit credential configuration
-let app;
-try {
-  app = initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: privateKey,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    })
-  });
-  console.log('Firebase Admin SDK initialized successfully');
-} catch (error) {
-  console.error('Error initializing Firebase Admin SDK:', error);
-  throw error;
-}
+const app = initializeApp({
+  credential: cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: privateKey,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  })
+});
 
 export const adminDb = getFirestore(app);
 export const adminAuth = getAuth(app);
