@@ -49,16 +49,30 @@ export function useWorkspaces() {
     }
   }, [user]);
 
-  const createWorkspace = async (name: string) => {
+  const createWorkspace = async (data: { name: string; description: string; icon: string }) => {
     if (!user) throw new Error('User must be authenticated');
 
     try {
+      // Validate required fields
+      if (!data.name?.trim()) {
+        throw new Error('Workspace name is required');
+      }
+      if (!data.description?.trim()) {
+        throw new Error('Workspace description is required');
+      }
+      if (!data.icon?.trim()) {
+        throw new Error('Workspace icon is required');
+      }
+
+      const timestamp = serverTimestamp();
       const workspaceData = {
-        name,
+        name: data.name.trim(),
+        description: data.description.trim(),
+        icon: data.icon.trim(),
         ownerId: user.uid,
         members: [user.uid],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
         agentCount: 0
       };
 

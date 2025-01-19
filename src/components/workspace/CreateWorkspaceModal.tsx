@@ -2,10 +2,25 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X, Briefcase } from 'lucide-react';
+import { X, Briefcase, Code, Building2, Users, Rocket, Bot, Brain, Laptop, Zap } from 'lucide-react';
+import type { WorkspaceIcon } from '../../types';
+
+const workspaceIcons: WorkspaceIcon[] = [
+  { name: 'building', icon: Building2 },
+  { name: 'briefcase', icon: Briefcase },
+  { name: 'code', icon: Code },
+  { name: 'users', icon: Users },
+  { name: 'rocket', icon: Rocket },
+  { name: 'bot', icon: Bot },
+  { name: 'brain', icon: Brain },
+  { name: 'laptop', icon: Laptop },
+  { name: 'zap', icon: Zap },
+];
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(50, 'Name must be less than 50 characters'),
+  name: z.string().trim().min(1, 'Name is required').max(50, 'Name must be less than 50 characters'),
+  description: z.string().trim().min(1, 'Description is required').max(200, 'Description must be less than 200 characters'),
+  icon: z.string().min(1, 'Icon is required'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -16,19 +31,31 @@ interface CreateWorkspaceModalProps {
 }
 
 export default function CreateWorkspaceModal({ onClose, onSubmit }: CreateWorkspaceModalProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      icon: 'building', // Set building as default icon
+      name: '',
+      description: ''
+    }
   });
   const [error, setError] = useState<string | null>(null);
+  const selectedIcon = watch('icon');
 
   const handleFormSubmit = async (data: FormData) => {
     try {
       setError(null);
-      await onSubmit(data);
+      await onSubmit({
+        name: data.name.trim(),
+        description: data.description.trim(),
+        icon: data.icon
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to create workspace');
     }
   };
+
+  const selectedIconComponent = workspaceIcons.find(icon => icon.name === selectedIcon)?.icon || Building2;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -39,7 +66,7 @@ export default function CreateWorkspaceModal({ onClose, onSubmit }: CreateWorksp
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 bg-primary-50 rounded-xl flex items-center justify-center">
-              <Briefcase className="h-5 w-5 text-primary-600" />
+              {React.createElement(selectedIconComponent, { className: "h-5 w-5 text-primary-600" })}
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">Create Workspace</h2>
@@ -62,6 +89,32 @@ export default function CreateWorkspaceModal({ onClose, onSubmit }: CreateWorksp
           )}
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-4">
+              Choose an Icon
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {workspaceIcons.map(({ name, icon: Icon }) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setValue('icon', name)}
+                  className={`p-3 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                    selectedIcon === name 
+                      ? 'bg-primary-50 text-primary-600 ring-2 ring-primary-500 ring-offset-2' 
+                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="h-6 w-6" />
+                </button>
+              ))}
+            </div>
+            <input type="hidden" {...register('icon')} />
+            {errors.icon && (
+              <p className="mt-1 text-sm text-red-600">{errors.icon.message}</p>
+            )}
+          </div>
+
+          <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
               Workspace Name
             </label>
@@ -73,6 +126,21 @@ export default function CreateWorkspaceModal({ onClose, onSubmit }: CreateWorksp
             />
             {errors.name && (
               <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              {...register('description')}
+              rows={3}
+              className="w-full rounded-xl border-gray-200 focus:border-primary-500 focus:ring-primary-500"
+              placeholder="Describe the purpose of this workspace..."
+            />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
             )}
           </div>
 

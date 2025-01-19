@@ -20,9 +20,16 @@ export interface Agent {
 export interface Workspace {
   id: string;
   name: string;
+  description: string;
+  icon: string;
   ownerId: string;
   createdAt: Date;
   updatedAt: Date;
   members?: string[];
   agentCount?: number;
 }
+
+export type WorkspaceIcon = {
+  name: string;
+  icon: typeof import('lucide-react').LucideIcon;
+};

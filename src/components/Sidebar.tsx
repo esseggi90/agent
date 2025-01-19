@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Home, Users, Settings, HelpCircle, Bot, BarChart2, Book, Zap, LogOut } from 'lucide-react';
 import { useAuth } from '../providers/AuthProvider';
 import { User } from 'firebase/auth';
 import WorkspaceSelector from './workspace/WorkspaceSelector';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 
 interface SidebarProps {
   user: User | null;
@@ -13,28 +11,8 @@ interface SidebarProps {
   onSelectWorkspace: (id: string) => void;
 }
 
-interface UserProfile {
-  firstName?: string;
-  lastName?: string;
-  email: string;
-}
-
 export default function Sidebar({ user, onCreateWorkspace, selectedWorkspaceId, onSelectWorkspace }: SidebarProps) {
   const { logout } = useAuth();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
-        }
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -42,20 +20,6 @@ export default function Sidebar({ user, onCreateWorkspace, selectedWorkspaceId, 
     } catch (error) {
       console.error('Logout error:', error);
     }
-  };
-
-  const getInitials = () => {
-    if (userProfile?.firstName && userProfile?.lastName) {
-      return `${userProfile.firstName[0]}${userProfile.lastName[0]}`.toUpperCase();
-    }
-    return userProfile?.email?.[0].toUpperCase() || '?';
-  };
-
-  const getDisplayName = () => {
-    if (userProfile?.firstName && userProfile?.lastName) {
-      return `${userProfile.firstName} ${userProfile.lastName}`;
-    }
-    return userProfile?.email?.split('@')[0] || 'User';
   };
 
   return (
@@ -142,15 +106,12 @@ export default function Sidebar({ user, onCreateWorkspace, selectedWorkspaceId, 
       <div className="p-4 border-t border-gray-100">
         <div className="flex flex-col space-y-4">
           <div className="flex items-center space-x-3 p-3 rounded-xl bg-gray-50">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-medium">
-              {getInitials()}
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-medium">
+              {user?.email?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {getDisplayName()}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {userProfile?.email}
+                {user?.email}
               </p>
             </div>
           </div>

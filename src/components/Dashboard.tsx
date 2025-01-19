@@ -40,9 +40,9 @@ export default function Dashboard() {
     }
   };
 
-  const handleCreateWorkspace = async (data: { name: string }) => {
+  const handleCreateWorkspace = async (data: { name: string; description: string; icon: string }) => {
     try {
-      await createWorkspace(data.name);
+      await createWorkspace(data);
       setShowCreateWorkspace(false);
     } catch (error) {
       console.error('Failed to create workspace:', error);

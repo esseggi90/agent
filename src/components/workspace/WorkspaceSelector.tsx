@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
-import { ChevronDown, Briefcase, Plus } from 'lucide-react';
+import { ChevronDown, Briefcase, Plus, Code, Building2, Users, Rocket, Bot, Brain, Laptop, Zap } from 'lucide-react';
 import { useWorkspaces } from '../../hooks/useWorkspaces';
+import type { WorkspaceIcon } from '../../types';
+
+const workspaceIcons: Record<string, typeof import('lucide-react').LucideIcon> = {
+  briefcase: Briefcase,
+  code: Code,
+  building: Building2,
+  users: Users,
+  rocket: Rocket,
+  bot: Bot,
+  brain: Brain,
+  laptop: Laptop,
+  zap: Zap,
+};
 
 interface WorkspaceSelectorProps {
   selectedId: string;
@@ -13,6 +26,7 @@ export default function WorkspaceSelector({ selectedId, onSelect, onCreateWorksp
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedWorkspace = workspaces.find(w => w.id === selectedId) || workspaces[0];
+  const IconComponent = selectedWorkspace?.icon ? workspaceIcons[selectedWorkspace.icon] || Briefcase : Briefcase;
 
   if (loading) {
     return (
@@ -33,14 +47,18 @@ export default function WorkspaceSelector({ selectedId, onSelect, onCreateWorksp
         >
           <div className="flex items-center space-x-3">
             <div className="h-8 w-8 bg-white rounded-lg shadow-sm flex items-center justify-center">
-              <Briefcase className="h-4 w-4 text-primary-600" />
+              <IconComponent className="h-4 w-4 text-primary-600" />
             </div>
             <div className="flex flex-col items-start">
               <span className="text-sm font-medium">
                 {selectedWorkspace?.name || 'Select Workspace'}
               </span>
               <span className="text-xs text-gray-500">
-                {selectedWorkspace?.agentCount || 0} agents
+                {selectedWorkspace?.description ? (
+                  <span className="line-clamp-1">{selectedWorkspace.description}</span>
+                ) : (
+                  `${selectedWorkspace?.agentCount || 0} agents`
+                )}
               </span>
             </div>
           </div>
@@ -49,19 +67,27 @@ export default function WorkspaceSelector({ selectedId, onSelect, onCreateWorksp
 
         {isOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
-            {workspaces.map((workspace) => (
-              <button
-                key={workspace.id}
-                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center space-x-3"
-                onClick={() => {
-                  onSelect(workspace.id);
-                  setIsOpen(false);
-                }}
-              >
-                <Briefcase className="h-4 w-4 text-gray-400" />
-                <span>{workspace.name}</span>
-              </button>
-            ))}
+            {workspaces.map((workspace) => {
+              const WorkspaceIcon = workspace.icon ? workspaceIcons[workspace.icon] || Briefcase : Briefcase;
+              return (
+                <button
+                  key={workspace.id}
+                  className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center space-x-3"
+                  onClick={() => {
+                    onSelect(workspace.id);
+                    setIsOpen(false);
+                  }}
+                >
+                  <WorkspaceIcon className="h-4 w-4 text-gray-400" />
+                  <div className="flex flex-col">
+                    <span>{workspace.name}</span>
+                    {workspace.description && (
+                      <span className="text-xs text-gray-500 line-clamp-1">{workspace.description}</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
             <div className="border-t border-gray-100 mt-1">
               <button
                 className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center space-x-3 text-primary-600"
