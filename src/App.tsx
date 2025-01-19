@@ -4,16 +4,25 @@ import { AuthProvider } from './providers/AuthProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthPage from './components/auth/AuthPage';
 import Dashboard from './components/Dashboard';
+import AgentsPage from './components/agents/AgentsPage';
 
 function AppContent() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
       <Route
-        path="/dashboard/*"
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/agents"
+        element={
+          <ProtectedRoute>
+            <AgentsPage />
           </ProtectedRoute>
         }
       />

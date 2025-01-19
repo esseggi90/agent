@@ -1,192 +1,170 @@
 import React from 'react';
 import { useAuth } from '../providers/AuthProvider';
 import Sidebar from './Sidebar';
-import Header from './Header';
-import AgentCard from './AgentCard';
-import WorkspaceSelector from './workspace/WorkspaceSelector';
-import CreateAgentModal from './agent/CreateAgentModal';
-import CreateWorkspaceModal from './workspace/CreateWorkspaceModal';
-import { useAgents } from '../hooks/useAgents';
-import { useWorkspaces } from '../hooks/useWorkspaces';
-import { Plus, Search, Filter, SortAsc, Menu, LayoutGrid, List } from 'lucide-react';
+import { BarChart2, ArrowUp, ArrowDown, Users, MessageSquare, Bot, Activity } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = React.useState<string>('');
-  const [showCreateAgent, setShowCreateAgent] = React.useState(false);
-  const [showCreateWorkspace, setShowCreateWorkspace] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [view, setView] = React.useState<'grid' | 'list'>('grid');
-  const [showMobileSidebar, setShowMobileSidebar] = React.useState(false);
-  
-  const { agents, createAgent } = useAgents(selectedWorkspaceId);
-  const { createWorkspace } = useWorkspaces();
 
-  const filteredAgents = agents.filter(agent => 
-    agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    agent.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleCreateAgent = async (data: any) => {
-    try {
-      await createAgent({
-        ...data,
-        icon: 'bot',
-        status: 'draft'
-      });
-      setShowCreateAgent(false);
-    } catch (error) {
-      console.error('Failed to create agent:', error);
+  const stats = [
+    {
+      name: 'Total Conversations',
+      value: '2,345',
+      change: '+12.3%',
+      trend: 'up',
+      icon: MessageSquare
+    },
+    {
+      name: 'Active Agents',
+      value: '12',
+      change: '+2',
+      trend: 'up',
+      icon: Bot
+    },
+    {
+      name: 'User Satisfaction',
+      value: '94.2%',
+      change: '-0.8%',
+      trend: 'down',
+      icon: Users
+    },
+    {
+      name: 'Response Time',
+      value: '1.2s',
+      change: '-0.3s',
+      trend: 'up',
+      icon: Activity
     }
-  };
+  ];
 
-  const handleCreateWorkspace = async (data: { name: string; description: string; icon: string }) => {
-    try {
-      await createWorkspace(data);
-      setShowCreateWorkspace(false);
-    } catch (error) {
-      console.error('Failed to create workspace:', error);
-      throw error;
-    }
-  };
+  const agentPerformance = [
+    { name: 'Customer Support Bot', conversations: 856, satisfaction: 95, responseTime: 0.8 },
+    { name: 'Sales Assistant', conversations: 643, satisfaction: 92, responseTime: 1.1 },
+    { name: 'Technical Support', conversations: 432, satisfaction: 89, responseTime: 1.5 },
+    { name: 'Onboarding Guide', conversations: 324, satisfaction: 97, responseTime: 0.9 }
+  ];
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Mobile Sidebar Overlay */}
-      {showMobileSidebar && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-200"
-          onClick={() => setShowMobileSidebar(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
-        lg:relative lg:translate-x-0
-        ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <Sidebar 
-          user={user} 
-          onCreateWorkspace={() => setShowCreateWorkspace(true)}
-          selectedWorkspaceId={selectedWorkspaceId}
-          onSelectWorkspace={setSelectedWorkspaceId}
-        />
-      </div>
+      <Sidebar 
+        user={user}
+        selectedWorkspaceId=""
+        onCreateWorkspace={() => {}}
+        onSelectWorkspace={() => {}}
+      />
       
-      <div className="flex-1 flex flex-col w-full">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 shadow-sm">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
-              <button
-                onClick={() => setShowMobileSidebar(true)}
-                className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-all duration-200"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+      <div className="flex-1 flex flex-col w-full overflow-hidden">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-8">
             {/* Dashboard Header */}
-            <div className="animate-fade-in">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Agents Dashboard</h1>
-              <p className="mt-2 text-sm text-gray-500">
-                Manage and monitor your AI agents
-              </p>
-            </div>
-
-            {/* Action Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Search agents..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
-                />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Monitor your AI agents' performance and analytics
+                </p>
               </div>
               
-              <div className="flex items-center gap-3">
-                <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-200">
-                  <button
-                    onClick={() => setView('grid')}
-                    className={`p-2 rounded-lg ${view === 'grid' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-500'} transition-all duration-200`}
-                  >
-                    <LayoutGrid className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => setView('list')}
-                    className={`p-2 rounded-lg ${view === 'list' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-500'} transition-all duration-200`}
-                  >
-                    <List className="h-5 w-5" />
-                  </button>
-                </div>
-                
-                <button className="btn-secondary">
-                  <Filter className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Filter</span>
-                </button>
-                
-                <button className="btn-secondary">
-                  <SortAsc className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Sort</span>
-                </button>
-                
-                <button
-                  onClick={() => setShowCreateAgent(true)}
-                  className="btn-primary"
-                >
-                  <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">New Agent</span>
-                </button>
+              <div className="flex items-center space-x-3">
+                <select className="rounded-xl border-gray-200 text-sm focus:border-primary-500 focus:ring-primary-500">
+                  <option>Last 7 days</option>
+                  <option>Last 30 days</option>
+                  <option>Last 3 months</option>
+                  <option>Last year</option>
+                </select>
               </div>
             </div>
 
-            {/* Agents Grid */}
-            <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6 animate-fade-in`}>
-              {filteredAgents.length > 0 ? (
-                filteredAgents.map((agent) => (
-                  <AgentCard key={agent.id} agent={agent} view={view} />
-                ))
-              ) : (
-                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <Search className="h-8 w-8 text-gray-400" />
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {stats.map((stat) => (
+                <div key={stat.name} className="stat-card">
+                  <div className="flex items-center justify-between">
+                    <div className="h-12 w-12 rounded-xl bg-primary-50 flex items-center justify-center">
+                      {React.createElement(stat.icon, { className: "h-6 w-6 text-primary-600" })}
+                    </div>
+                    <div className={`flex items-center space-x-1 text-sm ${
+                      stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      <span>{stat.change}</span>
+                      {stat.trend === 'up' ? (
+                        <ArrowUp className="h-4 w-4" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4" />
+                      )}
+                    </div>
                   </div>
-                  <p className="text-gray-500 mb-2">No agents found matching your search.</p>
-                  <button
-                    onClick={() => setShowCreateAgent(true)}
-                    className="btn-primary mt-4"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Agent
-                  </button>
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium text-gray-500">{stat.name}</h3>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{stat.value}</p>
+                  </div>
                 </div>
-              )}
+              ))}
+            </div>
+
+            {/* Agent Performance Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900">Agent Performance</h2>
+                <p className="text-sm text-gray-500 mt-1">Detailed metrics for each active agent</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Agent Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Conversations
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Satisfaction
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Avg. Response Time
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {agentPerformance.map((agent) => (
+                      <tr key={agent.name} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                              <Bot className="h-4 w-4 text-primary-600" />
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-900">{agent.name}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {agent.conversations.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <span className="text-sm text-gray-900">{agent.satisfaction}%</span>
+                            <div className="ml-2 w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-green-500 rounded-full"
+                                style={{ width: `${agent.satisfaction}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {agent.responseTime}s
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </main>
       </div>
-
-      {showCreateAgent && (
-        <CreateAgentModal
-          onClose={() => setShowCreateAgent(false)}
-          onSubmit={handleCreateAgent}
-        />
-      )}
-
-      {showCreateWorkspace && (
-        <CreateWorkspaceModal
-          onClose={() => setShowCreateWorkspace(false)}
-          onSubmit={handleCreateWorkspace}
-        />
-      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../providers/AuthProvider';
 import type { Workspace } from '../types';
@@ -64,8 +64,13 @@ export function useWorkspaces() {
         throw new Error('Workspace icon is required');
       }
 
+      // Generate a new document reference with auto-generated ID
+      const workspaceRef = doc(collection(db, 'workspaces'));
+      const workspaceId = workspaceRef.id;
+
       const timestamp = serverTimestamp();
       const workspaceData = {
+        id: workspaceId, // Include the ID in the document data
         name: data.name.trim(),
         description: data.description.trim(),
         icon: data.icon.trim(),
@@ -76,8 +81,9 @@ export function useWorkspaces() {
         agentCount: 0
       };
 
-      const docRef = await addDoc(collection(db, 'workspaces'), workspaceData);
-      return docRef.id;
+      // Use setDoc with the generated reference to save the workspace
+      await setDoc(workspaceRef, workspaceData);
+      return workspaceId;
     } catch (err) {
       console.error('Error creating workspace:', err);
       throw err;

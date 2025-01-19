@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, Users, Settings, HelpCircle, Bot, BarChart2, Book, Zap, LogOut } from 'lucide-react';
-import { useAuth } from '../providers/AuthProvider';
+import { Home, Users, Settings, HelpCircle, Bot, BarChart2, Book, Zap } from 'lucide-react';
 import { User } from 'firebase/auth';
+import { useNavigate, useLocation } from 'react-router-dom';
 import WorkspaceSelector from './workspace/WorkspaceSelector';
 
 interface SidebarProps {
@@ -12,15 +12,10 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ user, onCreateWorkspace, selectedWorkspaceId, onSelectWorkspace }: SidebarProps) {
-  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="w-64 bg-white flex flex-col h-full">
@@ -49,18 +44,42 @@ export default function Sidebar({ user, onCreateWorkspace, selectedWorkspaceId, 
             Main
           </h3>
           <div className="mt-2 space-y-1">
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium rounded-xl bg-primary-50 text-primary-700">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-xl transition-colors duration-200 ${
+                isActive('/dashboard') 
+                  ? 'bg-primary-50 text-primary-700' 
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
               <Home className="h-5 w-5 mr-3" />
               Dashboard
-            </a>
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+            </button>
+            <button 
+              onClick={() => navigate('/agents')}
+              className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-xl transition-colors duration-200 ${
+                isActive('/agents') 
+                  ? 'bg-primary-50 text-primary-700' 
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Bot className="h-5 w-5 mr-3" />
+              Agents
+            </button>
+            <button 
+              onClick={() => {}}
+              className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+            >
               <BarChart2 className="h-5 w-5 mr-3 text-gray-400" />
               Analytics
-            </a>
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+            </button>
+            <button 
+              onClick={() => {}}
+              className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+            >
               <Zap className="h-5 w-5 mr-3 text-gray-400" />
               Workflows
-            </a>
+            </button>
           </div>
         </div>
 
@@ -69,11 +88,17 @@ export default function Sidebar({ user, onCreateWorkspace, selectedWorkspaceId, 
             Team
           </h3>
           <div className="mt-2 space-y-1">
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+            <button 
+              onClick={() => {}}
+              className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+            >
               <Users className="h-5 w-5 mr-3 text-gray-400" />
               Members
-            </a>
-            <a href="#" className="flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+            </button>
+            <button 
+              onClick={() => {}}
+              className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+            >
               <div className="flex items-center">
                 <Book className="h-5 w-5 mr-3 text-gray-400" />
                 Documentation
@@ -81,47 +106,8 @@ export default function Sidebar({ user, onCreateWorkspace, selectedWorkspaceId, 
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">
                 New
               </span>
-            </a>
+            </button>
           </div>
-        </div>
-
-        <div className="mb-6">
-          <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Settings
-          </h3>
-          <div className="mt-2 space-y-1">
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-              <Settings className="h-5 w-5 mr-3 text-gray-400" />
-              General
-            </a>
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-              <HelpCircle className="h-5 w-5 mr-3 text-gray-400" />
-              Help Center
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* User Profile */}
-      <div className="p-4 border-t border-gray-100">
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center space-x-3 p-3 rounded-xl bg-gray-50">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-medium">
-              {user?.email?.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.email}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors duration-200"
-          >
-            <LogOut className="h-5 w-5 mr-2" />
-            Logout
-          </button>
         </div>
       </div>
     </div>
