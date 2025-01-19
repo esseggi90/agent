@@ -19,7 +19,7 @@ export default function AgentsPage() {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   
-  const { agents, createAgent } = useAgents(workspaceId || '');
+  const { agents, loading: agentsLoading, createAgent } = useAgents(workspaceId || '');
   const { createWorkspace } = useWorkspaces();
 
   const filteredAgents = agents.filter(agent => 
@@ -29,11 +29,7 @@ export default function AgentsPage() {
 
   const handleCreateAgent = async (data: any) => {
     try {
-      await createAgent({
-        ...data,
-        icon: 'bot',
-        status: 'draft'
-      });
+      await createAgent(data);
       setShowCreateAgent(false);
     } catch (error) {
       console.error('Failed to create agent:', error);
@@ -132,27 +128,48 @@ export default function AgentsPage() {
               </div>
             </div>
 
-            <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6`}>
-              {filteredAgents.length > 0 ? (
-                filteredAgents.map((agent) => (
-                  <AgentCard key={agent.id} agent={agent} view={view} />
-                ))
-              ) : (
-                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <Search className="h-8 w-8 text-gray-400" />
+            {agentsLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                      <div className="h-48 bg-gray-100" />
+                      <div className="p-6 space-y-4">
+                        <div className="h-6 bg-gray-100 rounded w-3/4" />
+                        <div className="h-4 bg-gray-100 rounded w-full" />
+                        <div className="h-4 bg-gray-100 rounded w-2/3" />
+                        <div className="pt-4 border-t border-gray-100 flex justify-end space-x-2">
+                          <div className="h-9 w-20 bg-gray-100 rounded-xl" />
+                          <div className="h-9 w-20 bg-gray-100 rounded-xl" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-gray-500 mb-2">No agents found matching your search.</p>
-                  <button
-                    onClick={() => setShowCreateAgent(true)}
-                    className="btn-primary mt-4"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Agent
-                  </button>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6`}>
+                {filteredAgents.length > 0 ? (
+                  filteredAgents.map((agent) => (
+                    <AgentCard key={agent.id} agent={agent} view={view} />
+                  ))
+                ) : (
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Search className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 mb-2">No agents found matching your search.</p>
+                    <button
+                      onClick={() => setShowCreateAgent(true)}
+                      className="btn-primary mt-4"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Agent
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>

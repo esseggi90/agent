@@ -11,10 +11,14 @@ export interface Agent {
   id: string;
   name: string;
   description: string;
+  type: 'customer_support' | 'sales' | 'technical' | 'other';
+  visibility: 'public' | 'private';
   icon?: string;
   coverImage?: string;
   lastEdited: Date;
   status: 'active' | 'draft' | 'archived';
+  workspaceId: string;
+  createdAt?: Date;
 }
 
 export interface Workspace {
