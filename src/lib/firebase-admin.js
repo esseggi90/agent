@@ -24,30 +24,19 @@ const privateKey = process.env.FIREBASE_PRIVATE_KEY.includes('\\n')
   ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
   : process.env.FIREBASE_PRIVATE_KEY;
 
-const serviceAccount = {
-  type: 'service_account',
-  project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key: privateKey,
-  client_email: process.env.FIREBASE_CLIENT_EMAIL,
-  client_id: process.env.FIREBASE_CLIENT_ID,
-  auth_uri: "https://accounts.google.com/o/oauth2/auth",
-  token_uri: "https://oauth2.googleapis.com/token",
-  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-  client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.FIREBASE_CLIENT_EMAIL)}`
-};
-
+// Initialize Firebase Admin with explicit credential configuration
 let app;
 try {
   app = initializeApp({
-    credential: cert(serviceAccount)
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: privateKey,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    })
   });
   console.log('Firebase Admin SDK initialized successfully');
 } catch (error) {
   console.error('Error initializing Firebase Admin SDK:', error);
-  console.error('Service Account:', {
-    ...serviceAccount,
-    private_key: '[REDACTED]'
-  });
   throw error;
 }
 
@@ -81,8 +70,9 @@ export const db = {
       const apiKey = crypto.randomBytes(32).toString('hex');
       const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
       
-      // Create the api_keys collection if it doesn't exist and add the new key
-      await this.collections.apiKeys().doc(hashedKey).set({
+      // Save the API key document
+      const apiKeyDoc = this.collections.apiKeys().doc(hashedKey);
+      await apiKeyDoc.set({
         userId,
         createdAt: new Date(),
         lastUsed: null,
@@ -119,50 +109,75 @@ export const db = {
 
   // Common operations
   async getDocument(collection, id) {
-    const doc = await this.collections[collection]().doc(id).get();
-    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    try {
+      const doc = await this.collections[collection]().doc(id).get();
+      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    } catch (error) {
+      console.error(`Error getting document from ${collection}:`, error);
+      throw error;
+    }
   },
 
   async createDocument(collection, data, id = null) {
-    const ref = id 
-      ? this.collections[collection]().doc(id)
-      : this.collections[collection]().doc();
-    
-    await ref.set({
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    
-    return { id: ref.id, ...data };
+    try {
+      const ref = id 
+        ? this.collections[collection]().doc(id)
+        : this.collections[collection]().doc();
+      
+      await ref.set({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      return { id: ref.id, ...data };
+    } catch (error) {
+      console.error(`Error creating document in ${collection}:`, error);
+      throw error;
+    }
   },
 
   async updateDocument(collection, id, data) {
-    const ref = this.collections[collection]().doc(id);
-    await ref.update({
-      ...data,
-      updatedAt: new Date()
-    });
-    return { id, ...data };
+    try {
+      const ref = this.collections[collection]().doc(id);
+      await ref.update({
+        ...data,
+        updatedAt: new Date()
+      });
+      return { id, ...data };
+    } catch (error) {
+      console.error(`Error updating document in ${collection}:`, error);
+      throw error;
+    }
   },
 
   async deleteDocument(collection, id) {
-    await this.collections[collection]().doc(id).delete();
-    return true;
+    try {
+      await this.collections[collection]().doc(id).delete();
+      return true;
+    } catch (error) {
+      console.error(`Error deleting document from ${collection}:`, error);
+      throw error;
+    }
   },
 
   async query(collection, conditions = []) {
-    let query = this.collections[collection]();
-    
-    conditions.forEach(({ field, operator, value }) => {
-      query = query.where(field, operator, value);
-    });
+    try {
+      let query = this.collections[collection]();
+      
+      conditions.forEach(({ field, operator, value }) => {
+        query = query.where(field, operator, value);
+      });
 
-    const snapshot = await query.get();
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+      const snapshot = await query.get();
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error(`Error querying ${collection}:`, error);
+      throw error;
+    }
   }
 };
 
