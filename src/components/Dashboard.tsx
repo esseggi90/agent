@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../providers/AuthProvider';
+import { useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import Header from './layout/Header';
 import { BarChart2, ArrowUp, ArrowDown, Users, MessageSquare, Bot, Activity } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   const stats = [
     {
@@ -46,39 +50,41 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Sidebar 
-        user={user}
-        selectedWorkspaceId=""
-        onCreateWorkspace={() => {}}
-        onSelectWorkspace={() => {}}
-      />
+      {showMobileSidebar && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setShowMobileSidebar(false)}
+        />
+      )}
+
+      <div className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl
+        lg:relative lg:translate-x-0
+        ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <Sidebar 
+          user={user}
+          selectedWorkspaceId={workspaceId || ''}
+          onCreateWorkspace={() => {}}
+          onSelectWorkspace={() => {}}
+        />
+      </div>
       
-      <div className="flex-1 flex flex-col w-full overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 flex flex-col w-full">
+        <Header onMenuClick={() => setShowMobileSidebar(true)} />
+        
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           <div className="max-w-7xl mx-auto space-y-8">
-            {/* Dashboard Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Monitor your AI agents' performance and analytics
-                </p>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <select className="rounded-xl border-gray-200 text-sm focus:border-primary-500 focus:ring-primary-500">
-                  <option>Last 7 days</option>
-                  <option>Last 30 days</option>
-                  <option>Last 3 months</option>
-                  <option>Last year</option>
-                </select>
-              </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+              <p className="mt-2 text-sm text-gray-500">
+                Monitor your AI agents' performance and analytics
+              </p>
             </div>
 
-            {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {stats.map((stat) => (
-                <div key={stat.name} className="stat-card">
+                <div key={stat.name} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="h-12 w-12 rounded-xl bg-primary-50 flex items-center justify-center">
                       {React.createElement(stat.icon, { className: "h-6 w-6 text-primary-600" })}
@@ -102,7 +108,6 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* Agent Performance Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900">Agent Performance</h2>
