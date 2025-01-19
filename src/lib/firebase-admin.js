@@ -19,10 +19,15 @@ requiredEnvVars.forEach(varName => {
   }
 });
 
+// Process the private key - handle both formats
+const privateKey = process.env.FIREBASE_PRIVATE_KEY.includes('\\n') 
+  ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+  : process.env.FIREBASE_PRIVATE_KEY;
+
 const serviceAccount = {
   type: 'service_account',
   project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  private_key: privateKey,
   client_email: process.env.FIREBASE_CLIENT_EMAIL,
   client_id: process.env.FIREBASE_CLIENT_ID,
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
@@ -39,6 +44,10 @@ try {
   console.log('Firebase Admin SDK initialized successfully');
 } catch (error) {
   console.error('Error initializing Firebase Admin SDK:', error);
+  console.error('Service Account:', {
+    ...serviceAccount,
+    private_key: '[REDACTED]'
+  });
   throw error;
 }
 
@@ -57,16 +66,25 @@ export const db = {
 
   // API Key operations
   async generateApiKey(userId) {
-    const apiKey = crypto.randomBytes(32).toString('hex');
-    const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
-    
-    await this.collections.apiKeys().doc(hashedKey).set({
-      userId,
-      createdAt: new Date(),
-      lastUsed: null
-    });
+    if (!userId) {
+      throw new Error('userId is required');
+    }
 
-    return apiKey;
+    try {
+      const apiKey = crypto.randomBytes(32).toString('hex');
+      const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+      
+      await this.collections.apiKeys().doc(hashedKey).set({
+        userId,
+        createdAt: new Date(),
+        lastUsed: null
+      });
+
+      return apiKey;
+    } catch (error) {
+      console.error('Error generating API key:', error);
+      throw new Error('Failed to generate API key');
+    }
   },
 
   async validateApiKey(apiKey) {
