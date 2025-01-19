@@ -5,18 +5,22 @@ import Header from './Header';
 import AgentCard from './AgentCard';
 import WorkspaceSelector from './workspace/WorkspaceSelector';
 import CreateAgentModal from './agent/CreateAgentModal';
+import CreateWorkspaceModal from './workspace/CreateWorkspaceModal';
 import { useAgents } from '../hooks/useAgents';
+import { useWorkspaces } from '../hooks/useWorkspaces';
 import { Plus, Search, Filter, SortAsc, Menu, LayoutGrid, List } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [selectedWorkspaceId, setSelectedWorkspaceId] = React.useState<string>('');
   const [showCreateAgent, setShowCreateAgent] = React.useState(false);
+  const [showCreateWorkspace, setShowCreateWorkspace] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [view, setView] = React.useState<'grid' | 'list'>('grid');
   const [showMobileSidebar, setShowMobileSidebar] = React.useState(false);
   
   const { agents, createAgent } = useAgents(selectedWorkspaceId);
+  const { createWorkspace } = useWorkspaces();
 
   const filteredAgents = agents.filter(agent => 
     agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -36,6 +40,16 @@ export default function Dashboard() {
     }
   };
 
+  const handleCreateWorkspace = async (data: { name: string }) => {
+    try {
+      await createWorkspace(data.name);
+      setShowCreateWorkspace(false);
+    } catch (error) {
+      console.error('Failed to create workspace:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Mobile Sidebar Overlay */}
@@ -52,7 +66,12 @@ export default function Dashboard() {
         lg:relative lg:translate-x-0
         ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <Sidebar user={user} />
+        <Sidebar 
+          user={user} 
+          onCreateWorkspace={() => setShowCreateWorkspace(true)}
+          selectedWorkspaceId={selectedWorkspaceId}
+          onSelectWorkspace={setSelectedWorkspaceId}
+        />
       </div>
       
       <div className="flex-1 flex flex-col w-full">
@@ -80,22 +99,8 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in" style={{ '--delay': '0.2s' } as React.CSSProperties}>
-              {[
-                { label: 'Total Agents', value: agents.length, icon: 'bot' },
-                { label: 'Active Agents', value: agents.filter(a => a.status === 'active').length, icon: 'active' },
-                { label: 'Draft Agents', value: agents.filter(a => a.status === 'draft').length, icon: 'draft' }
-              ].map((stat, idx) => (
-                <div key={idx} className="stat-card">
-                  <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                  <p className="mt-2 text-3xl font-bold text-gray-900">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-
             {/* Action Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in" style={{ '--delay': '0.3s' } as React.CSSProperties}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
@@ -144,7 +149,7 @@ export default function Dashboard() {
             </div>
 
             {/* Agents Grid */}
-            <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6 animate-fade-in`} style={{ '--delay': '0.4s' } as React.CSSProperties}>
+            <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6 animate-fade-in`}>
               {filteredAgents.length > 0 ? (
                 filteredAgents.map((agent) => (
                   <AgentCard key={agent.id} agent={agent} view={view} />
@@ -173,6 +178,13 @@ export default function Dashboard() {
         <CreateAgentModal
           onClose={() => setShowCreateAgent(false)}
           onSubmit={handleCreateAgent}
+        />
+      )}
+
+      {showCreateWorkspace && (
+        <CreateWorkspaceModal
+          onClose={() => setShowCreateWorkspace(false)}
+          onSubmit={handleCreateWorkspace}
         />
       )}
     </div>

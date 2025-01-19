@@ -6,14 +6,15 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, userData: { firstName: string; lastName: string }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -55,11 +56,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, userData: { firstName: string; lastName: string }) => {
     try {
       console.log('Attempting sign up...');
       const result = await createUserWithEmailAndPassword(auth, email, password);
       console.log('Sign up successful:', result.user.email);
+
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', result.user.uid), {
+        id: result.user.uid, // Explicitly store the user ID
+        email: result.user.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Error signing up:', error.code, error.message);

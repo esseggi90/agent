@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,6 +6,8 @@ import { useAuth } from '../../providers/AuthProvider';
 import { UserPlus } from 'lucide-react';
 
 const schema = z.object({
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string()
@@ -18,15 +20,21 @@ type FormData = z.infer<typeof schema>;
 
 export default function SignUpForm() {
   const { signUp } = useAuth();
+  const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      await signUp(data.email, data.password);
-    } catch (error) {
+      setError(null);
+      await signUp(data.email, data.password, {
+        firstName: data.firstName,
+        lastName: data.lastName
+      });
+    } catch (error: any) {
       console.error('Signup error:', error);
+      setError(error.message);
     }
   };
 
@@ -41,7 +49,45 @@ export default function SignUpForm() {
         
         <h2 className="text-2xl font-bold text-center mb-8">Create Account</h2>
         
+        {error && (
+          <div className="mb-6 p-4 text-sm text-red-600 bg-red-50 rounded-xl">
+            {error}
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                First Name
+              </label>
+              <input
+                {...register('firstName')}
+                type="text"
+                className="w-full rounded-xl border-gray-200 focus:border-primary-500 focus:ring-primary-500"
+                placeholder="John"
+              />
+              {errors.firstName && (
+                <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                Last Name
+              </label>
+              <input
+                {...register('lastName')}
+                type="text"
+                className="w-full rounded-xl border-gray-200 focus:border-primary-500 focus:ring-primary-500"
+                placeholder="Doe"
+              />
+              {errors.lastName && (
+                <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+              )}
+            </div>
+          </div>
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
