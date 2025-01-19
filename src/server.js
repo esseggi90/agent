@@ -24,6 +24,42 @@ app.use(express.static(join(__dirname, '../dist')));
 const workflowEngine = new WorkflowEngine();
 const chatSessionStorage = new ChatSessionStorage();
 
+// API Key middleware
+const requireApiKey = async (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  
+  if (!apiKey) {
+    return res.status(401).json({ 
+      error: 'API key is required. Please include it in the X-API-Key header.' 
+    });
+  }
+
+  const keyData = await db.validateApiKey(apiKey);
+  if (!keyData) {
+    return res.status(401).json({ 
+      error: 'Invalid API key.' 
+    });
+  }
+
+  req.userId = keyData.userId;
+  next();
+};
+
+// API Key management endpoints
+app.post('/api/keys', async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const apiKey = await db.generateApiKey(userId);
+    res.status(201).json({ apiKey });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -32,17 +68,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Agent Management Endpoints
-app.post('/api/agents', async (req, res) => {
-  try {
-    const agent = await db.createDocument('agents', req.body);
-    res.status(201).json(agent);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-app.get('/api/agents', async (req, res) => {
+// Protected API endpoints
+app.get('/api/agents', requireApiKey, async (req, res) => {
   try {
     const agents = await db.query('agents');
     res.json(agents);
@@ -51,7 +78,16 @@ app.get('/api/agents', async (req, res) => {
   }
 });
 
-app.get('/api/agents/:agentId', async (req, res) => {
+app.post('/api/agents', requireApiKey, async (req, res) => {
+  try {
+    const agent = await db.createDocument('agents', req.body);
+    res.status(201).json(agent);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/agents/:agentId', requireApiKey, async (req, res) => {
   try {
     const agent = await db.getDocument('agents', req.params.agentId);
     if (!agent) {
@@ -63,7 +99,7 @@ app.get('/api/agents/:agentId', async (req, res) => {
   }
 });
 
-app.put('/api/agents/:agentId', async (req, res) => {
+app.put('/api/agents/:agentId', requireApiKey, async (req, res) => {
   try {
     const agent = await db.updateDocument('agents', req.params.agentId, req.body);
     res.json(agent);
@@ -72,7 +108,7 @@ app.put('/api/agents/:agentId', async (req, res) => {
   }
 });
 
-app.delete('/api/agents/:agentId', async (req, res) => {
+app.delete('/api/agents/:agentId', requireApiKey, async (req, res) => {
   try {
     await db.deleteDocument('agents', req.params.agentId);
     res.status(204).send();
@@ -82,7 +118,7 @@ app.delete('/api/agents/:agentId', async (req, res) => {
 });
 
 // Chat Session Endpoints
-app.post('/api/agents/:agentId/chat', async (req, res) => {
+app.post('/api/agents/:agentId/chat', requireApiKey, async (req, res) => {
   try {
     const { agentId } = req.params;
     const { chatId, userId, input } = req.body;
@@ -146,7 +182,7 @@ app.post('/api/agents/:agentId/chat', async (req, res) => {
   }
 });
 
-app.get('/api/sessions/:chatId', (req, res) => {
+app.get('/api/sessions/:chatId', requireApiKey, (req, res) => {
   const session = chatSessionStorage.getSession(req.params.chatId);
   if (!session) {
     return res.status(404).json({ error: 'Session not found' });

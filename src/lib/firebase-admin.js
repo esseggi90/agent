@@ -2,6 +2,7 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -27,6 +28,35 @@ export const db = {
     users: () => adminDb.collection('users'),
     workspaces: () => adminDb.collection('workspaces'),
     agents: () => adminDb.collection('agents'),
+    apiKeys: () => adminDb.collection('apiKeys'),
+  },
+
+  // API Key operations
+  async generateApiKey(userId) {
+    const apiKey = crypto.randomBytes(32).toString('hex');
+    const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+    
+    await this.collections.apiKeys().doc(hashedKey).set({
+      userId,
+      createdAt: new Date(),
+      lastUsed: null
+    });
+
+    return apiKey;
+  },
+
+  async validateApiKey(apiKey) {
+    if (!apiKey) return null;
+    
+    const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+    const keyDoc = await this.collections.apiKeys().doc(hashedKey).get();
+    
+    if (!keyDoc.exists) return null;
+    
+    // Update last used timestamp
+    await keyDoc.ref.update({ lastUsed: new Date() });
+    
+    return keyDoc.data();
   },
 
   // Common operations
