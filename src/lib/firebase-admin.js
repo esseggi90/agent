@@ -26,9 +26,7 @@ console.log('- Private Key exists:', !!process.env.FIREBASE_PRIVATE_KEY);
 console.log('- Client Email exists:', !!process.env.FIREBASE_CLIENT_EMAIL);
 
 // Process the private key - handle both formats
-const privateKey = process.env.FIREBASE_PRIVATE_KEY.includes('\\n') 
-  ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-  : process.env.FIREBASE_PRIVATE_KEY;
+const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
 
 // Initialize Firebase Admin with explicit credential configuration
 let app;
@@ -46,7 +44,9 @@ try {
   });
 
   app = initializeApp({
-    credential: cert(certConfig)
+    credential: cert(certConfig),
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
   });
   
   console.log('Firebase Admin SDK initialized successfully');
@@ -83,7 +83,7 @@ export const db = {
       console.log('Generating API key for user:', userId);
       
       // First verify the user exists
-      const userDoc = await this.collections.users().doc(userId).get();
+      const userDoc = await adminDb.collection('users').doc(userId).get();
       if (!userDoc.exists) {
         throw new Error('User not found');
       }
@@ -93,7 +93,7 @@ export const db = {
       const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
       
       // Save the API key document
-      const apiKeyDoc = this.collections.apiKeys().doc(hashedKey);
+      const apiKeyDoc = adminDb.collection('api_keys').doc(hashedKey);
       await apiKeyDoc.set({
         userId,
         createdAt: new Date(),
@@ -119,7 +119,7 @@ export const db = {
     
     try {
       const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
-      const keyDoc = await this.collections.apiKeys().doc(hashedKey).get();
+      const keyDoc = await adminDb.collection('api_keys').doc(hashedKey).get();
       
       if (!keyDoc.exists || !keyDoc.data().isActive) {
         return null;
