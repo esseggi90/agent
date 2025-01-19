@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, setDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { WorkflowData } from '../types';
 
@@ -16,12 +16,9 @@ export function useWorkflows(agentId: string) {
     }
 
     try {
-      const q = query(
-        collection(db, 'workflows'),
-        where('agentId', '==', agentId)
-      );
-
-      const unsubscribe = onSnapshot(q, 
+      // Reference the workflows subcollection under the agent document
+      const workflowsRef = collection(db, 'agents', agentId, 'workflows');
+      const unsubscribe = onSnapshot(workflowsRef, 
         (snapshot) => {
           const workflowData = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -52,11 +49,12 @@ export function useWorkflows(agentId: string) {
     if (!agentId) throw new Error('Agent ID is required');
 
     try {
-      const docRef = doc(collection(db, 'workflows'));
-      const docId = docRef.id;
+      // Create a new document reference in the workflows subcollection
+      const workflowRef = doc(collection(db, 'agents', agentId, 'workflows'));
+      const workflowId = workflowRef.id;
 
       const workflowData = {
-        id: docId,
+        id: workflowId,
         name: data.name,
         description: data.description,
         type: data.type,
@@ -69,7 +67,7 @@ export function useWorkflows(agentId: string) {
         updatedAt: serverTimestamp()
       };
 
-      await setDoc(docRef, workflowData);
+      await setDoc(workflowRef, workflowData);
       return workflowData;
     } catch (err) {
       console.error('Error creating workflow:', err);
@@ -77,5 +75,34 @@ export function useWorkflows(agentId: string) {
     }
   };
 
-  return { workflows, loading, error, createWorkflow };
+  const duplicateWorkflow = async (workflowId: string) => {
+    try {
+      const workflowRef = doc(db, 'agents', agentId, 'workflows', workflowId);
+      const workflowSnap = await getDoc(workflowRef);
+      
+      if (!workflowSnap.exists()) {
+        throw new Error('Workflow not found');
+      }
+
+      const originalData = workflowSnap.data();
+      const newWorkflowRef = doc(collection(db, 'agents', agentId, 'workflows'));
+      
+      const duplicatedData = {
+        ...originalData,
+        id: newWorkflowRef.id,
+        name: `${originalData.name} (Copy)`,
+        status: 'draft',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      await setDoc(newWorkflowRef, duplicatedData);
+      return duplicatedData;
+    } catch (err) {
+      console.error('Error duplicating workflow:', err);
+      throw new Error('Failed to duplicate workflow');
+    }
+  };
+
+  return { workflows, loading, error, createWorkflow, duplicateWorkflow };
 }

@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, SortAsc, LayoutGrid, List, Workflow, Play, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Search, Filter, SortAsc, MoreVertical, AlertCircle, Workflow, MessageSquare, Zap, Bot, Copy, Trash2, Edit2 } from 'lucide-react';
 import CreateWorkflowModal from '../../components/workflows/CreateWorkflowModal';
-import WorkflowCard from '../../components/workflows/WorkflowCard';
 import { useWorkflows } from '../../hooks/useWorkflows';
 import { useParams } from 'react-router-dom';
+
+const workflowTypeIcons = {
+  'conversation': MessageSquare,
+  'automation': Bot,
+  'integration': Zap,
+  'default': Workflow
+};
 
 export default function WorkflowsPage() {
   const { workspaceId, agentId } = useParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
-  const { workflows, loading, error, createWorkflow } = useWorkflows(agentId || '');
+  const [showMenuId, setShowMenuId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const { workflows, loading, error, createWorkflow, duplicateWorkflow, deleteWorkflow } = useWorkflows(agentId || '');
 
   const filteredWorkflows = workflows.filter(workflow => 
     workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -29,6 +36,52 @@ export default function WorkflowsPage() {
       console.error('Failed to create workflow:', error);
     }
   };
+
+  const handleDuplicate = async (workflowId: string) => {
+    try {
+      await duplicateWorkflow(workflowId);
+      setShowMenuId(null);
+      setMenuPosition(null);
+    } catch (error) {
+      console.error('Failed to duplicate workflow:', error);
+    }
+  };
+
+  const handleDelete = async (workflowId: string) => {
+    if (window.confirm('Are you sure you want to delete this workflow?')) {
+      try {
+        await deleteWorkflow(workflowId);
+        setShowMenuId(null);
+        setMenuPosition(null);
+      } catch (error) {
+        console.error('Failed to delete workflow:', error);
+      }
+    }
+  };
+
+  const handleClickOutside = (e: MouseEvent) => {
+    if (!(e.target as Element).closest('.workflow-menu')) {
+      setShowMenuId(null);
+      setMenuPosition(null);
+    }
+  };
+
+  const handleMenuClick = (e: React.MouseEvent, workflowId: string) => {
+    e.stopPropagation();
+    const button = e.currentTarget as HTMLButtonElement;
+    const rect = button.getBoundingClientRect();
+    
+    setShowMenuId(showMenuId === workflowId ? null : workflowId);
+    setMenuPosition(showMenuId === workflowId ? null : {
+      top: rect.bottom + window.scrollY + 8,
+      left: rect.right - 192, // 192px is menu width (48px * 4)
+    });
+  };
+
+  React.useEffect(() => {
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -56,21 +109,6 @@ export default function WorkflowsPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-200">
-                <button
-                  onClick={() => setView('grid')}
-                  className={`p-2 rounded-lg ${view === 'grid' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-500'}`}
-                >
-                  <LayoutGrid className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => setView('list')}
-                  className={`p-2 rounded-lg ${view === 'list' ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:text-gray-500'}`}
-                >
-                  <List className="h-5 w-5" />
-                </button>
-              </div>
-              
               <button className="btn-secondary">
                 <Filter className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Filter</span>
@@ -104,57 +142,101 @@ export default function WorkflowsPage() {
 
           {/* Loading State */}
           {loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-100">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                    <div className="h-48 bg-gray-100" />
-                    <div className="p-6 space-y-4">
-                      <div className="h-6 bg-gray-100 rounded w-3/4" />
-                      <div className="h-4 bg-gray-100 rounded w-full" />
-                      <div className="h-4 bg-gray-100 rounded w-2/3" />
-                      <div className="pt-4 border-t border-gray-100 flex justify-end space-x-2">
-                        <div className="h-9 w-20 bg-gray-100 rounded-xl" />
-                        <div className="h-9 w-20 bg-gray-100 rounded-xl" />
-                      </div>
-                    </div>
-                  </div>
+                <div key={i} className="animate-pulse p-4">
+                  <div className="h-5 bg-gray-100 rounded w-1/4 mb-2" />
+                  <div className="h-4 bg-gray-100 rounded w-1/2" />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Workflows Grid/List */}
+          {/* Workflows List */}
           {!loading && (
-            <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-6`}>
+            <div className="bg-white rounded-xl border border-gray-100 min-h-[300px]">
               {filteredWorkflows.length > 0 ? (
-                filteredWorkflows.map((workflow) => (
-                  <WorkflowCard 
-                    key={workflow.id} 
-                    workflow={workflow}
-                    view={view}
-                  />
-                ))
+                <div className="divide-y divide-gray-100">
+                  {filteredWorkflows.map((workflow) => {
+                    const IconComponent = workflowTypeIcons[workflow.type as keyof typeof workflowTypeIcons] || workflowTypeIcons.default;
+                    
+                    return (
+                      <div key={workflow.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                        <div className="flex-1 min-w-0 mr-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 bg-primary-50 rounded-lg flex items-center justify-center">
+                              <IconComponent className="h-5 w-5 text-primary-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-900 truncate">{workflow.name}</h3>
+                              <p className="mt-1 text-sm text-gray-500 truncate">{workflow.description}</p>
+                            </div>
+                            <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${
+                              workflow.status === 'active' 
+                                ? 'bg-green-50 text-green-700 border border-green-200/50' 
+                                : workflow.status === 'draft'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200/50'
+                                : 'bg-gray-50 text-gray-700 border border-gray-200/50'
+                            }`}>
+                              {workflow.status.charAt(0).toUpperCase() + workflow.status.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="workflow-menu">
+                          <button
+                            onClick={(e) => handleMenuClick(e, workflow.id)}
+                            className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100"
+                          >
+                            <MoreVertical className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
-                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mb-4">
-                    <Workflow className="h-8 w-8 text-primary-600" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No workflows found</h3>
-                  <p className="text-gray-500 mb-4">Get started by creating your first workflow</p>
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="btn-primary"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Workflow
-                  </button>
+                <div className="p-8 text-center">
+                  <p className="text-sm text-gray-500">No workflows found</p>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Menu Portal - Rendered at the root level */}
+      {showMenuId && menuPosition && (
+        <div 
+          className="fixed z-[100] w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1"
+          style={{
+            top: menuPosition.top,
+            left: menuPosition.left,
+          }}
+        >
+          <button
+            onClick={() => {}}
+            className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-50 flex items-center"
+          >
+            <Edit2 className="h-4 w-4 mr-2" />
+            Edit
+          </button>
+          <button
+            onClick={() => handleDuplicate(showMenuId)}
+            className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-50 flex items-center"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Duplicate
+          </button>
+          <button
+            onClick={() => handleDelete(showMenuId)}
+            className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 flex items-center"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </button>
+        </div>
+      )}
 
       {showCreateModal && (
         <CreateWorkflowModal
