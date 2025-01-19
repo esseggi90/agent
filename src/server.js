@@ -24,6 +24,19 @@ app.use(express.static(join(__dirname, '../dist')));
 const workflowEngine = new WorkflowEngine();
 const chatSessionStorage = new ChatSessionStorage();
 
+// Admin authentication middleware
+const requireAdminAuth = (req, res, next) => {
+  const adminSecret = req.headers['x-admin-secret'];
+  
+  if (!adminSecret || adminSecret !== process.env.ADMIN_API_SECRET) {
+    return res.status(401).json({ 
+      error: 'Invalid admin credentials'
+    });
+  }
+  
+  next();
+};
+
 // API Key middleware
 const requireApiKey = async (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
@@ -45,8 +58,16 @@ const requireApiKey = async (req, res, next) => {
   next();
 };
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API Key management endpoints
-app.post('/api/keys', async (req, res) => {
+app.post('/api/keys', requireAdminAuth, async (req, res) => {
   try {
     const userId = req.body.userId;
     if (!userId) {
@@ -56,16 +77,9 @@ app.post('/api/keys', async (req, res) => {
     const apiKey = await db.generateApiKey(userId);
     res.status(201).json({ apiKey });
   } catch (error) {
+    console.error('Error generating API key:', error);
     res.status(500).json({ error: error.message });
   }
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
 });
 
 // Protected API endpoints
