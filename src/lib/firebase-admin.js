@@ -61,7 +61,7 @@ export const db = {
     users: () => adminDb.collection('users'),
     workspaces: () => adminDb.collection('workspaces'),
     agents: () => adminDb.collection('agents'),
-    apiKeys: () => adminDb.collection('apiKeys'),
+    apiKeys: () => adminDb.collection('api_keys'),
   },
 
   // API Key operations
@@ -71,18 +71,27 @@ export const db = {
     }
 
     try {
+      // First verify the user exists
+      const userDoc = await this.collections.users().doc(userId).get();
+      if (!userDoc.exists) {
+        throw new Error('User not found');
+      }
+
+      // Generate a new API key
       const apiKey = crypto.randomBytes(32).toString('hex');
       const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
       
+      // Create the api_keys collection if it doesn't exist and add the new key
       await this.collections.apiKeys().doc(hashedKey).set({
         userId,
         createdAt: new Date(),
-        lastUsed: null
+        lastUsed: null,
+        isActive: true
       });
 
       return apiKey;
     } catch (error) {
-      console.error('Error generating API key:', error);
+      console.error('Error in generateApiKey:', error);
       throw new Error('Failed to generate API key');
     }
   },
@@ -90,15 +99,22 @@ export const db = {
   async validateApiKey(apiKey) {
     if (!apiKey) return null;
     
-    const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
-    const keyDoc = await this.collections.apiKeys().doc(hashedKey).get();
-    
-    if (!keyDoc.exists) return null;
-    
-    // Update last used timestamp
-    await keyDoc.ref.update({ lastUsed: new Date() });
-    
-    return keyDoc.data();
+    try {
+      const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+      const keyDoc = await this.collections.apiKeys().doc(hashedKey).get();
+      
+      if (!keyDoc.exists || !keyDoc.data().isActive) {
+        return null;
+      }
+      
+      // Update last used timestamp
+      await keyDoc.ref.update({ lastUsed: new Date() });
+      
+      return keyDoc.data();
+    } catch (error) {
+      console.error('Error in validateApiKey:', error);
+      return null;
+    }
   },
 
   // Common operations
