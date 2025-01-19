@@ -19,19 +19,46 @@ requiredEnvVars.forEach(varName => {
   }
 });
 
+// Debug log environment variables (without exposing sensitive data)
+console.log('Firebase Config Check:');
+console.log('- Project ID exists:', !!process.env.FIREBASE_PROJECT_ID);
+console.log('- Private Key exists:', !!process.env.FIREBASE_PRIVATE_KEY);
+console.log('- Client Email exists:', !!process.env.FIREBASE_CLIENT_EMAIL);
+
 // Process the private key - handle both formats
 const privateKey = process.env.FIREBASE_PRIVATE_KEY.includes('\\n') 
   ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
   : process.env.FIREBASE_PRIVATE_KEY;
 
 // Initialize Firebase Admin with explicit credential configuration
-const app = initializeApp({
-  credential: cert({
+let app;
+try {
+  const certConfig = {
     projectId: process.env.FIREBASE_PROJECT_ID,
     privateKey: privateKey,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  })
-});
+  };
+  
+  console.log('Initializing Firebase Admin with config:', {
+    projectId: certConfig.projectId,
+    clientEmail: certConfig.clientEmail,
+    privateKeyLength: certConfig.privateKey.length
+  });
+
+  app = initializeApp({
+    credential: cert(certConfig)
+  });
+  
+  console.log('Firebase Admin SDK initialized successfully');
+} catch (error) {
+  console.error('Error initializing Firebase Admin SDK:', error);
+  console.error('Error details:', {
+    code: error.code,
+    message: error.message,
+    stack: error.stack
+  });
+  throw error;
+}
 
 export const adminDb = getFirestore(app);
 export const adminAuth = getAuth(app);
@@ -53,6 +80,8 @@ export const db = {
     }
 
     try {
+      console.log('Generating API key for user:', userId);
+      
       // First verify the user exists
       const userDoc = await this.collections.users().doc(userId).get();
       if (!userDoc.exists) {
@@ -72,9 +101,15 @@ export const db = {
         isActive: true
       });
 
+      console.log('API key generated successfully');
       return apiKey;
     } catch (error) {
       console.error('Error in generateApiKey:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       throw new Error('Failed to generate API key');
     }
   },
