@@ -5,6 +5,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthPage from './components/auth/AuthPage';
 import Dashboard from './components/Dashboard';
 import AgentsPage from './components/agents/AgentsPage';
+import CMSLayout from './components/cms/CMSLayout';
+import CMSPage from './pages/cms/CMSPage';
+import WorkflowsPage from './pages/cms/WorkflowsPage';
 import { useWorkspaces } from './hooks/useWorkspaces';
 
 function WorkspaceRedirect() {
@@ -30,6 +33,8 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
+      
+      {/* Protected Routes */}
       <Route
         path="/:workspaceId/dashboard"
         element={
@@ -38,6 +43,7 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/:workspaceId/agents"
         element={
@@ -46,6 +52,26 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+
+      {/* CMS Routes */}
+      <Route
+        path="/workspace/:workspaceId/agents/:agentId/cms/*"
+        element={
+          <ProtectedRoute>
+            <CMSLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<CMSPage />} />
+        <Route path="content" element={<CMSPage />} />
+        <Route path="workflows" element={<WorkflowsPage />} />
+        <Route path="integration" element={<CMSPage />} />
+        <Route path="publish" element={<CMSPage />} />
+        <Route path="transcripts" element={<CMSPage />} />
+        <Route path="analytics" element={<CMSPage />} />
+        <Route path="settings" element={<CMSPage />} />
+      </Route>
+
       <Route path="/" element={<WorkspaceRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

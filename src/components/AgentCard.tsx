@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Play, Edit2, Bot } from 'lucide-react';
 import type { Agent } from '../types';
 
@@ -10,6 +10,7 @@ interface AgentCardProps {
 
 export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
   const navigate = useNavigate();
+  const { workspaceId } = useParams();
 
   const statusColors = {
     active: 'bg-green-50 text-green-700 border-green-200/50',
@@ -18,8 +19,11 @@ export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
   };
 
   const handleAction = (type: 'run' | 'edit') => {
-    // TODO: Implement run and edit functionality
-    console.log(`${type} action clicked for agent:`, agent.id);
+    if (type === 'edit') {
+      navigate(`/workspace/${workspaceId}/agents/${agent.id}/cms`);
+    } else {
+      console.log(`Run action clicked for agent:`, agent.id);
+    }
   };
 
   if (view === 'list') {
@@ -51,7 +55,6 @@ export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
             <div className="flex space-x-2">
               <button
                 onClick={() => handleAction('edit')}
-                title="Edit functionality coming soon"
                 className="btn-secondary"
               >
                 <Edit2 className="h-4 w-4 mr-2" />
@@ -59,7 +62,6 @@ export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
               </button>
               <button
                 onClick={() => handleAction('run')}
-                title="Run functionality coming soon"
                 className="btn-primary"
               >
                 <Play className="h-4 w-4 mr-2" />
@@ -105,7 +107,6 @@ export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
         <div className="mt-6 flex items-center justify-end space-x-2 pt-4 border-t border-gray-100">
           <button
             onClick={() => handleAction('edit')}
-            title="Edit functionality coming soon"
             className="btn-secondary"
           >
             <Edit2 className="h-4 w-4 mr-2" />
@@ -113,7 +114,6 @@ export default function AgentCard({ agent, view = 'grid' }: AgentCardProps) {
           </button>
           <button
             onClick={() => handleAction('run')}
-            title="Run functionality coming soon"
             className="btn-primary"
           >
             <Play className="h-4 w-4 mr-2" />

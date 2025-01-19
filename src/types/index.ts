@@ -33,6 +33,34 @@ export interface Workspace {
   agentCount?: number;
 }
 
+export interface WorkflowData {
+  id: string;
+  name: string;
+  description: string;
+  type: 'conversation' | 'automation' | 'integration';
+  visibility: 'public' | 'private';
+  status: 'active' | 'draft' | 'archived';
+  agentId: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkflowNode {
+  id: string;
+  type: string;
+  data: any;
+  position: { x: number; y: number };
+}
+
+export interface WorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+}
+
 export type WorkspaceIcon = {
   name: string;
   icon: typeof import('lucide-react').LucideIcon;

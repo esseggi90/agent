@@ -52,5 +52,20 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && 
         isWorkspaceMember(resource.data.workspaceId);
     }
+
+    // Workflow rules
+    match /workflows/{workflowId} {
+      allow read: if isAuthenticated() && 
+        isWorkspaceMember(get(/databases/$(database)/documents/agents/$(resource.data.agentId)).data.workspaceId);
+      
+      allow create: if isAuthenticated() && 
+        isWorkspaceMember(get(/databases/$(database)/documents/agents/$(request.resource.data.agentId)).data.workspaceId);
+      
+      allow update: if isAuthenticated() && 
+        isWorkspaceMember(get(/databases/$(database)/documents/agents/$(resource.data.agentId)).data.workspaceId);
+      
+      allow delete: if isAuthenticated() && 
+        isWorkspaceMember(get(/databases/$(database)/documents/agents/$(resource.data.agentId)).data.workspaceId);
+    }
   }
 }
